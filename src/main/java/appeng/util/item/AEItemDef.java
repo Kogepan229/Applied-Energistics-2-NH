@@ -16,6 +16,10 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
+import appeng.api.stacks.AEItemKey;
 import appeng.util.Platform;
 import cpw.mods.fml.common.registry.GameRegistry.UniqueIdentifier;
 import cpw.mods.fml.relauncher.Side;
@@ -44,6 +48,8 @@ public class AEItemDef {
     private UniqueIdentifier uniqueID;
 
     private OreReference isOre;
+    /** Lazily created key for the current item, damage and tag. Cleared whenever one of them changes. */
+    private @Nullable AEItemKey key;
 
     public AEItemDef(final Item it) {
         this.item = it;
@@ -101,12 +107,23 @@ public class AEItemDef {
         this.myHash = this.def ^ (this.getTagCompound() == null ? 0 : System.identityHashCode(this.getTagCompound()));
     }
 
+    @NonNull
+    AEItemKey getKey() {
+        AEItemKey result = this.key;
+        if (result == null) {
+            result = AEItemKey.of(this.item, this.damageValue, this.tagCompound);
+            this.key = result;
+        }
+        return result;
+    }
+
     AESharedNBT getTagCompound() {
         return this.tagCompound;
     }
 
     void setTagCompound(final AESharedNBT tagCompound) {
         this.tagCompound = tagCompound;
+        this.key = null;
     }
 
     int getDamageValue() {
@@ -115,6 +132,7 @@ public class AEItemDef {
 
     int setDamageValue(final int damageValue) {
         this.damageValue = damageValue;
+        this.key = null;
         return damageValue;
     }
 

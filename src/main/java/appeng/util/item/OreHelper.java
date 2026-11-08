@@ -20,11 +20,14 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Sets;
 
+import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.data.IAEItemStack;
 
 public class OreHelper {
@@ -52,26 +55,44 @@ public class OreHelper {
      * @return true if an ore entry exists, false otherwise
      */
     public OreReference isOre(final ItemStack itemStack) {
-        final ItemRef ir = new ItemRef(itemStack);
+        final ItemRef ir = new ItemRef(itemStack.getItem(), itemStack.getItemDamage());
+        final OreReference cached = this.references.get(ir);
+        if (cached != null || this.references.containsKey(ir)) {
+            return cached;
+        }
+        return this.createReference(ir, itemStack);
+    }
 
-        if (!this.references.containsKey(ir)) {
-            final OreReference ref = new OreReference();
-            final Collection<Integer> ores = ref.getOres();
-            final Collection<String> set = ref.getEquivalents();
-
-            for (final int id : OreDictionary.getOreIDs(itemStack)) {
-                ores.add(id);
-                set.add(OreDictionary.getOreName(id));
-            }
-
-            if (!set.isEmpty()) {
-                this.references.put(ir, ref);
-            } else {
-                this.references.put(ir, null);
-            }
+    /**
+     * @return the ore dictionary entries of the key, or null if it has none.
+     */
+    public @Nullable OreReference getReference(final @Nullable AEItemKey key) {
+        if (key == null) {
+            return null;
         }
 
-        return this.references.get(ir);
+        final ItemRef ir = new ItemRef(key.getItem(), key.getItemDamage());
+        final OreReference cached = this.references.get(ir);
+        if (cached != null || this.references.containsKey(ir)) {
+            return cached;
+        }
+        // The probe stack is only needed to query the ore dictionary once per item and damage.
+        return this.createReference(ir, new ItemStack(key.getItem(), 1, key.getItemDamage()));
+    }
+
+    private @Nullable OreReference createReference(final ItemRef ir, final ItemStack probe) {
+        final OreReference ref = new OreReference();
+        final Collection<Integer> ores = ref.getOres();
+        final Collection<String> set = ref.getEquivalents();
+
+        for (final int id : OreDictionary.getOreIDs(probe)) {
+            ores.add(id);
+            set.add(OreDictionary.getOreName(id));
+        }
+
+        final OreReference result = set.isEmpty() ? null : ref;
+        this.references.put(ir, result);
+        return result;
     }
 
     boolean sameOre(final AEItemStack aeItemStack, final IAEItemStack is) {
@@ -115,13 +136,13 @@ public class OreHelper {
         private final int damage;
         private final int hash;
 
-        ItemRef(final ItemStack stack) {
-            this.ref = stack.getItem();
+        ItemRef(final Item item, final int damage) {
+            this.ref = item;
 
-            if (stack.getItem().isDamageable()) {
+            if (item.isDamageable()) {
                 this.damage = 0; // IGNORED
             } else {
-                this.damage = stack.getItemDamage(); // might be important...
+                this.damage = damage; // might be important...
             }
 
             this.hash = this.ref.hashCode() ^ this.damage;

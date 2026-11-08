@@ -40,11 +40,13 @@ import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 import appeng.api.config.FuzzyMode;
+import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.StorageChannel;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStackType;
@@ -810,5 +812,11 @@ public final class AEItemStack extends AEStack<IAEItemStack> implements IAEItemS
     @Override
     public IAEStackType<IAEItemStack> getStackType() {
         return ITEM_STACK_TYPE;
+    }
+
+    @NonNull
+    @Override
+    public AEItemKey getKey() {
+        return this.getDefinition().getKey();
     }
 }

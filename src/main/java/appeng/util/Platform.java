@@ -105,6 +105,8 @@ import appeng.api.networking.storage.IStorageGrid;
 import appeng.api.parts.IPart;
 import appeng.api.parts.IPartHost;
 import appeng.api.parts.SelectedPart;
+import appeng.api.stacks.AEKey;
+import appeng.api.stacks.GenericStack;
 import appeng.api.storage.IMEInventory;
 import appeng.api.storage.IMEMonitor;
 import appeng.api.storage.IMEMonitorHandlerReceiver;
@@ -2221,6 +2223,16 @@ public class Platform {
     public static void handleLeftover(final EntityPlayer p, final IAEStack<?> aes) {
         final ItemStack container = AEApi.instance().definitions().items().itemMEStackPacket().maybeStack(1).get();
         Platform.writeStackNBT(aes, ItemStackNBT.get(container));
+        addToPlayerInvOrDrop(p, container);
+    }
+
+    /**
+     * Gives {@code amount} of {@code what} to the player wrapped in an ME stack packet, dropping it if the inventory is
+     * full.
+     */
+    public static void handleLeftover(final EntityPlayer p, final AEKey what, final long amount) {
+        final ItemStack container = AEApi.instance().definitions().items().itemMEStackPacket().maybeStack(1).get();
+        container.setTagCompound(new GenericStack(what, amount).toNBT());
         addToPlayerInvOrDrop(p, container);
     }
 
